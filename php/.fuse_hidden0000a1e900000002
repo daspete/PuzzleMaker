@@ -1,0 +1,265 @@
+<?php
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
+ini_set('max_execution_time', 600);
+
+class PuzzleMaker{
+	
+	protected $defaults=array(
+		"tilesX" => 3,
+		"tilesY" => 3,
+		"tileDimension" => 166,
+		"connectorDimension" => 0.25,
+		"connectorMultiplier" => 0.7,
+		"outputPath" => "./"
+	);
+
+	protected $settings=array();
+
+	protected $tileSettings=array();
+	protected $tiles=array();
+
+	public function __construct($params){
+		$this->setSettings($params);
+
+		$this->generateTiles();
+	}
+
+	protected function setSettings($params){
+		$this->settings=$this->defaults;
+
+		foreach($params as $paramKey => $paramValue){
+			$this->settings[$paramKey] = $paramValue;
+		}
+	}
+
+	public function getTiles(){
+		return json_encode($this->tiles);
+	}
+
+	protected function generateTiles(){
+		for($y=0; $y < $this->settings["tilesY"]; $y++){
+			for($x=0; $x < $this->settings["tilesX"]; $x++){
+				$this->setTileSettings($x, $y);
+				//$this->createTile($x, $y);
+			}		
+		}
+
+		for($y=0; $y < $this->settings["tilesY"]; $y++){
+			for($x=0; $x < $this->settings["tilesX"]; $x++){
+				//$this->setTileSettings($x, $y);
+				$this->createTile($x, $y);
+			}		
+		}
+	}
+
+	protected function setTileSettings($x, $y){
+		$top=rand(1,2);
+		$bottom=rand(1,2);
+		$left=rand(1,2);
+		$right=rand(1,2);
+
+		if(isset($this->tileSettings[($x-1).'_'.$y]) && $this->tileSettings[($x-1).'_'.$y]["right"] !== 0){
+			$left=1+($this->tileSettings[($x-1).'_'.$y]["right"] % 2);
+		}
+
+		if(isset($this->tileSettings[$x.'_'.($y-1)]) && $this->tileSettings[$x.'_'.($y-1)]["bottom"] !== 0){
+			$top=1+($this->tileSettings[$x.'_'.($y-1)]["bottom"] % 2);
+		}
+		
+		if($y === 0){
+			$top=0;
+		}
+		if($y === $this->settings["tilesY"]-1){
+			$bottom=0;
+		}
+		
+		if($x === 0){
+			$left=0;
+		}
+		if($x === $this->settings["tilesX"]-1){
+			$right=0;
+		}
+		
+		$this->tileSettings[$x.'_'.$y]=array(
+			"top" => $top,
+			"bottom" => $bottom,
+			"left" => $left,
+			"right" => $right
+		);
+	}
+
+	protected function createTile($x, $y){
+		$settings=$this->tileSettings[$x.'_'.$y];
+		$conWidth=$this->settings["connectorDimension"]*$this->settings["tileDimension"];
+
+		$width=$tileWidth=$this->settings["tileDimension"];
+		$height=$tileHeight=$this->settings["tileDimension"];
+
+		$top=0;
+		$left=0;
+
+
+		if($settings["left"] === 1){
+			$width+=$conWidth;
+		}
+		if($settings["right"] === 1){
+			$width+=$conWidth;
+		}
+
+		if($settings["top"] === 1){
+			$height+=$conWidth;
+		}
+		if($settings["bottom"] === 1){
+			$height+=$conWidth;
+		}
+
+
+		if($settings["top"] === 1){
+			$top+=$conWidth;
+		}
+
+		if($settings["left"] === 1){
+			$left+=$conWidth;
+		}
+
+
+		$im=new Imagick();
+		$im->newImage($width, $height, 'none');
+
+		$draw=new ImagickDraw();
+		$draw->setFillColor('Black');
+
+		$draw->pathStart();
+		$draw->pathMoveToAbsolute($left,$top);
+
+		if($settings["top"] === 0){
+			$draw->pathLineToRelative($tileWidth,0);
+		}else{
+			$draw->pathLineToRelative($tileWidth/2-$conWidth/2,0);
+			
+			if($settings["top"] === 1){
+				$draw->pathCurveToRelative(
+					0,
+					-$conWidth,
+					$conWidth,
+					-$conWidth,
+					$conWidth,
+					0				
+				);
+			}else{
+				$draw->pathCurveToRelative(
+					0,
+					$conWidth,
+					$conWidth,
+					$conWidth,
+					$conWidth,
+					0				
+				);
+			}
+
+			$draw->pathLineToRelative($tileWidth/2-$conWidth/2,0);
+		}
+
+		if($settings["right"] === 0){
+			$draw->pathLineToRelative(0,$tileHeight);
+		}else{
+			$draw->pathLineToRelative(0,$tileHeight/2-$conWidth/2);
+			
+			if($settings["right"] === 1){
+				$draw->pathCurveToRelative(
+					$conWidth,
+					0,
+					$conWidth,
+					$conWidth,
+					0,
+					$conWidth				
+				);
+			}else{
+				$draw->pathCurveToRelative(
+					-$conWidth,
+					0,
+					-$conWidth,
+					$conWidth,
+					0,
+					$conWidth				
+				);
+			}
+
+			$draw->pathLineToRelative(0,$tileHeight/2-$conWidth/2);
+		}
+
+		if($settings["bottom"] === 0){
+			$draw->pathLineToRelative(-$tileWidth,0);
+		}else{
+			$draw->pathLineToRelative(-$tileWidth/2+$conWidth/2,0);
+			
+			if($settings["bottom"] === 1){
+				$draw->pathCurveToRelative(
+					0,
+					$conWidth,
+					-$conWidth,
+					$conWidth,
+					-$conWidth,
+					0				
+				);
+			}else{
+				$draw->pathCurveToRelative(
+					0,
+					-$conWidth,
+					-$conWidth,
+					-$conWidth,
+					-$conWidth,
+					0				
+				);
+			}
+
+			$draw->pathLineToRelative(-$tileWidth/2+$conWidth/2,0);
+		}
+
+		if($settings["left"] === 0){
+			$draw->pathLineToRelative(0,-$tileHeight);
+		}else{
+			$draw->pathLineToRelative(0,-$tileHeight/2+$conWidth/2);
+			
+			if($settings["left"] === 1){
+				$draw->pathCurveToRelative(
+					-$conWidth,
+					0,
+					-$conWidth,
+					-$conWidth,
+					0,
+					-$conWidth				
+				);
+			}else{
+				$draw->pathCurveToRelative(
+					$conWidth,
+					0,
+					$conWidth,
+					-$conWidth,
+					0,
+					-$conWidth				
+				);
+			}
+
+			$draw->pathLineToRelative(0,-$tileHeight/2+$conWidth/2);
+		}
+
+		$draw->pathclose();
+		$draw->pathFinish();
+
+		$im->setImageFormat("png");
+		$im->drawImage($draw);
+
+		$this->tiles['tile'.$x.'_'.$y]=base64_encode($im->getImageBlob());
+		$im->destroy(); 
+	}
+}
+
+$puzzle_maker=new PuzzleMaker(array(
+	"tilesX" => 3,
+	"tilesY" => 3
+));
+
+echo $puzzle_maker->getTiles();
+

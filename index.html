@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PuzzleMaker Demo</title>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+
+    <script src="js/Puzzle.js"></script>
+
+    <script>
+    	var tilesX=3;
+    	var tilesY=3;
+
+    	$(document).ready(function(){
+    		var puzzle=new PuzzleMaker({
+    			tilesX: tilesX,
+    			tilesY: tilesY
+    		});
+
+    		puzzle.getTiles(function(data){
+    			for(var y=0; y < tilesY; y++)
+    				for(var x=0; x < tilesX; x++)
+    					createTile(x,y,data['tile'+x+'_'+y]);
+    		});
+
+    	});
+
+    	function createTile(x,y,data){
+    		var $tile=$('<div>');
+    		$tile.addClass('tile');
+    		$tile.tileIndex={
+    			x: x,
+    			y: y
+    		};
+
+    		$tile.width(data.width);
+    		$tile.height(data.height);
+    		$tile.css({
+    			display: 'inline-block',
+    			backgroundImage:'url(data:image/png;base64,'+data.image+')',
+    			backgroundRepeat: 'no-repeat'
+    		});
+
+    		$('body').append($tile);
+    		if(x===tilesX-1){
+    			$('body').append('<br/>');
+    		}
+    	}
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
